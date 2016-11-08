@@ -109,6 +109,7 @@ public class CircleProgressView extends View {
     private int mBarWidth = 40;
     private int mRimWidth = 40;
     private int mStartAngle = 270;
+    private int mEndAngle = 360;
     private float mOuterContourSize = 1;
     private float mInnerContourSize = 1;
 
@@ -177,11 +178,12 @@ public class CircleProgressView extends View {
     private boolean mRoundToWholeNumber = false;
 
     private int mTouchEventCount;
-    private OnProgressChangedListener onProgressChangedListener;
+    /* package */ OnProgressChangedListener onProgressChangedListener;
     private float previousProgressChangedValue;
 
 
     private DecimalFormat decimalFormat = new DecimalFormat("0");
+    private boolean mReverseProgress;
 
     // Text typeface
     private Typeface textTypeface;
@@ -957,6 +959,27 @@ public class CircleProgressView extends View {
     public void setLengthChangeInterpolator(TimeInterpolator interpolator) {
         mAnimationHandler.setLengthChangeInterpolator(interpolator);
     }
+    /**
+     * Sets the progress to be reversed (Max to Min).
+     * @param reverseProgress
+     */
+    public void setReverseProgress(boolean reverseProgress){ mReverseProgress = reverseProgress; }
+    /**
+     * Sets and normalizes the end angle
+     * @param endAngle
+     */
+    public void setEndAngle(int endAngle){
+        setEndAngle(endAngle, true);
+    }
+    /**
+     * Sets and possibly normalizes the end angle
+     * @param endAngle
+     * @param normalize
+     */
+    public void setEndAngle(int endAngle, boolean normalize){
+        mEndAngle = normalize ? Float.valueOf(normalizeAngle(endAngle)).intValue() : endAngle;
+
+    }
 
     //endregion getter/setter
     //----------------------------------
@@ -1573,7 +1596,7 @@ public class CircleProgressView extends View {
             drawDebug(canvas);
         }
 
-        float degrees = (360f / mMaxValue * mCurrentValue);
+        float degrees = (mEndAngle / mMaxValue * mCurrentValue);
 
         // Draw the background circle
         if (mBackgroundCircleColor != 0) {
@@ -1667,15 +1690,25 @@ public class CircleProgressView extends View {
             mSpinningBarLengthCurrent = 1;
         }
 
-        float startAngle;
-        if (mDirection == Direction.CW) {
-            startAngle = mStartAngle + mCurrentSpinnerDegreeValue - mSpinningBarLengthCurrent;
+        if(mReverseProgress){
+            float startAngle;
+            if (mDirection == Direction.CW) {
+                startAngle = mStartAngle + mCurrentSpinnerDegreeValue - mSpinningBarLengthCurrent;
+            } else {
+                startAngle = mStartAngle - mCurrentSpinnerDegreeValue;
+            }
+            canvas.drawArc(mCircleBounds, mSpinningBarLengthCurrent, startAngle + 360, false,
+                    mBarSpinnerPaint);
         } else {
-            startAngle = mStartAngle - mCurrentSpinnerDegreeValue;
+            float startAngle;
+            if (mDirection == Direction.CW) {
+                startAngle = mStartAngle + mCurrentSpinnerDegreeValue - mSpinningBarLengthCurrent;
+            } else {
+                startAngle = mStartAngle - mCurrentSpinnerDegreeValue;
+            }
+            canvas.drawArc(mCircleBounds, startAngle, mSpinningBarLengthCurrent, false,
+                    mBarSpinnerPaint);
         }
-
-        canvas.drawArc(mCircleBounds, startAngle, mSpinningBarLengthCurrent, false,
-                mBarSpinnerPaint);
     }
 
     private void drawTextWithUnit(Canvas canvas) {
@@ -1790,11 +1823,20 @@ public class CircleProgressView extends View {
     }
 
     private void drawBar(Canvas _canvas, float _degrees) {
-        float startAngle = mDirection == Direction.CW ? mStartAngle : mStartAngle - _degrees;
-        if (!mShowBlock) {
-            _canvas.drawArc(mCircleBounds, startAngle, _degrees, false, mBarPaint);
+        if(mReverseProgress){
+            float startAngle = mDirection == Direction.CW ? mStartAngle : mStartAngle - _degrees;
+            if (!mShowBlock) {
+                _canvas.drawArc(mCircleBounds, _degrees, mStartAngle + 360 - _degrees, false, mBarPaint);
+            } else {
+                drawBlocks(_canvas, mCircleBounds, _degrees, startAngle, false, mBarPaint);
+            }
         } else {
-            drawBlocks(_canvas, mCircleBounds, startAngle, _degrees, false, mBarPaint);
+            float startAngle = mDirection == Direction.CW ? mStartAngle : mStartAngle - _degrees;
+            if (!mShowBlock) {
+                _canvas.drawArc(mCircleBounds, startAngle, _degrees, false, mBarPaint);
+            } else {
+                drawBlocks(_canvas, mCircleBounds, startAngle, _degrees, false, mBarPaint);
+            }
         }
     }
 

@@ -285,6 +285,7 @@ public class AnimationHandler extends Handler {
                         }
                         sendEmptyMessageDelayed(AnimationMsg.TICK.ordinal(), circleView.mFrameDelayMillis - (SystemClock.uptimeMillis() - mFrameStartTime));
                         circleView.invalidate();
+                        circleView.onProgressChangedListener.onProgressChanged(circleView.mCurrentValue);
                         break;
                 }
 
